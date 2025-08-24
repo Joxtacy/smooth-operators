@@ -10,6 +10,7 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -38,11 +39,11 @@ public class McpApplication {
     }
 
     @Bean
-    public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
+    public List<McpServerFeatures.AsyncPromptSpecification> myPrompts() {
         var prompt = new McpSchema.Prompt("greeting", "A friendly greeting prompt",
                 List.of(new McpSchema.PromptArgument("name", "The name to greet", true)));
 
-        var promptSpecification = new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
+        var promptSpecification = new McpServerFeatures.AsyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
             var nameArgument = (String) getPromptRequest.arguments().get("name");
             if (nameArgument == null) {
                 nameArgument = "friend";
@@ -52,26 +53,27 @@ public class McpApplication {
                     McpSchema.Role.USER,
                     new McpSchema.TextContent("Hello " + nameArgument + "! How can I assist you today?")
             );
-            return new McpSchema.GetPromptResult("A personalized greeting message", List.of(userMessage));
+            return Mono.just(new McpSchema.GetPromptResult("A personalized greeting message", List.of(userMessage)));
         });
 
         return List.of(promptSpecification);
     }
 
     @Bean
-    public List<McpServerFeatures.SyncResourceSpecification> myResources() {
+    public List<McpServerFeatures.AsyncResourceSpecification> myResources() {
         var systemInfoResource = new McpSchema.Resource("github://repos/{owner}/{repo}", "GitHub Repository",
                 "Repository Information for a given GitHub repository",
                 "application/json",
                 new McpSchema.Annotations(List.of(McpSchema.Role.USER), 0.1)
         );
-        var resourceSpecification = new McpServerFeatures.SyncResourceSpecification(systemInfoResource,
+        var resourceSpecification = new McpServerFeatures.AsyncResourceSpecification(systemInfoResource,
                 (exchange, request) -> {
                     try {
                         var systemInfo = Map.of("hi", "hello");
                         String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
-                        return new McpSchema.ReadResourceResult(
-                                List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
+                        return Mono.just(new McpSchema.ReadResourceResult(
+                                List.of(new McpSchema.TextResourceContents(request.uri(), "application/json",
+                                        jsonContent))));
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to generate system info", e);
                     }
