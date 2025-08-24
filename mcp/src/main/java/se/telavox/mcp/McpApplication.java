@@ -60,8 +60,10 @@ public class McpApplication {
 
     @Bean
     public List<McpServerFeatures.SyncResourceSpecification> myResources() {
-        var systemInfoResource = new McpSchema.Resource("uri", "name", "desc", "application/json",
-                new McpSchema.Annotations(List.of(McpSchema.Role.USER), 1.0)
+        var systemInfoResource = new McpSchema.Resource("github://repos/{owner}/{repo}", "GitHub Repository",
+                "Repository Information for a given GitHub repository",
+                "application/json",
+                new McpSchema.Annotations(List.of(McpSchema.Role.USER), 0.1)
         );
         var resourceSpecification = new McpServerFeatures.SyncResourceSpecification(systemInfoResource,
                 (exchange, request) -> {
