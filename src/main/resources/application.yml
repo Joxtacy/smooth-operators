@@ -1,0 +1,70 @@
+# Application Configuration
+spring:
+  application:
+    name: smooth-operators-api
+  
+  # Jackson configuration for better JSON error responses
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: NON_NULL
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+  
+  # Servlet configuration for better error handling
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  
+  # Validation configuration
+  validation:
+    enabled: true
+
+# API Configuration
+api:
+  documentation:
+    base-url: https://docs.smoothoperators.com
+  error-handling:
+    include-stack-trace: false
+    include-binding-errors: true
+    include-message: true
+  rate-limiting:
+    enabled: true
+    requests-per-minute: 100
+
+# Logging configuration for better error tracking
+logging:
+  level:
+    com.smoothoperators: INFO
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+# Management endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: smooth-operators-api
+
+# Server configuration
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,text/plain,text/html,application/xml
+    min-response-size: 1024
