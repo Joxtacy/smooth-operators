@@ -1,0 +1,47 @@
+# Kong Configuration Validation Rules
+# This file can be used with 'deck validate' command
+
+version: "3.0"
+
+# Validation rules for Kong configuration
+validation:
+  # Security validation
+  security:
+    - rule: "No wildcard CORS origins"
+      check: "plugins[?name=='cors'].config.origins[?@ == '*'] | length(@) == `0`"
+      message: "CORS should not allow all origins (*). Specify explicit domains."
+    
+    - rule: "API authentication required for internal services"
+      check: "services[?contains(name, 'internal')].plugins[?contains(name, 'auth')] | length(@) > `0`"
+      message: "Internal services must have authentication plugins configured."
+  
+  # Performance validation  
+  performance:
+    - rule: "Connection timeouts configured"
+      check: "services[*].connect_timeout | [?@ > `0`] | length(@) == length(services)"
+      message: "All services should have connection timeouts configured."
+    
+    - rule: "Rate limiting configured"
+      check: "services[*].plugins[?name=='rate-limiting'] | length(@) > `0`"
+      message: "Rate limiting should be configured for all services."
+  
+  # Monitoring validation
+  monitoring:
+    - rule: "Prometheus metrics enabled"
+      check: "plugins[?name=='prometheus'] | length(@) > `0`"
+      message: "Prometheus metrics should be enabled for monitoring."
+    
+    - rule: "Request correlation IDs"
+      check: "plugins[?name=='correlation-id'] | length(@) > `0`"
+      message: "Correlation IDs should be configured for request tracing."
+
+# Best practice recommendations
+recommendations:
+  - "Use HTTPS for all upstream services when possible"
+  - "Configure circuit breakers for critical services"
+  - "Implement request/response validation"
+  - "Set up proper logging and monitoring"
+  - "Use strong API keys and rotate them regularly"
+  - "Configure appropriate rate limits based on service capacity"
+  - "Enable request size limiting to prevent abuse"
+  - "Set up health checks for upstream services"
