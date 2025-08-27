@@ -14,7 +14,7 @@ public class DummyController {
     }
 
     @GetMapping("/fibonacci")
-    public String fibonacci(@RequestParam int n) {
+    public String fibonacciEndpoint(@RequestParam int n) {
         // Exponential slowdown due to naive recursion
         long result = fibonacci(n);
         return "Hello! Fibonacci of " + n + " is " + result;
