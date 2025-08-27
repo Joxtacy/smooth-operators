@@ -1,0 +1,163 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+- name: httpbin-service
+  url: http://httpbin.org
+  connect_timeout: 5000
+  write_timeout: 10000
+  read_timeout: 10000
+  retries: 3
+  routes:
+  - name: httpbin-route
+    paths:
+    - /httpbin
+    methods:
+    - GET
+    - POST
+    strip_path: true
+  plugins:
+  - name: rate-limiting
+    config:
+      minute: 5
+      hour: 50
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 1024
+  - name: response-ratelimiting
+    config:
+      limits:
+        video: 
+          minute: 2
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+  - name: file-log
+    config:
+      path: "/tmp/access.log"
+      reopen: true
+
+- name: jsonplaceholder-service
+  url: https://jsonplaceholder.typicode.com
+  connect_timeout: 5000
+  write_timeout: 10000
+  read_timeout: 10000
+  retries: 3
+  routes:
+  - name: jsonplaceholder-route
+    paths:
+    - /api
+    methods:
+    - GET
+    strip_path: true
+  plugins:
+  - name: cors
+    config:
+      origins:
+      - "https://yourdomain.com"
+      - "https://app.yourdomain.com"
+      methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      headers:
+      - Accept
+      - Content-Type
+      - Authorization
+      - X-Requested-With
+      credentials: true
+      max_age: 3600
+  - name: rate-limiting
+    config:
+      minute: 20
+      hour: 1000
+      policy: local
+      fault_tolerant: true
+  - name: request-validator
+    config:
+      allowed_content_types:
+      - application/json
+      - application/x-www-form-urlencoded
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+
+- name: internal-api
+  url: http://internal-service:3000
+  connect_timeout: 3000
+  write_timeout: 8000
+  read_timeout: 8000
+  retries: 2
+  routes:
+  - name: internal-route
+    paths:
+    - /internal
+    methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    strip_path: true
+  plugins:
+  - name: key-auth
+    config:
+      key_names:
+      - apikey
+      - X-API-Key
+      hide_credentials: true
+  - name: rate-limiting
+    config:
+      minute: 30
+      hour: 500
+      policy: local
+      fault_tolerant: true
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 2048
+  - name: response-transformer
+    config:
+      add:
+        headers:
+        - "X-Service-Name:internal-api"
+        - "X-Response-Time:$(latencies.request)"
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+  - name: circuit-breaker
+    config:
+      failure_threshold: 5
+      recovery_timeout: 30
+      unhealthy_status_codes:
+      - 500
+      - 502
+      - 503
+      - 504
+
+# Global plugins for all services
+plugins:
+- name: correlation-id
+  config:
+    header_name: X-Correlation-ID
+    generator: uuid
+    echo_downstream: true
+- name: request-termination
+  config:
+    status_code: 503
+    message: "Service temporarily unavailable"
+  enabled: false  # Can be enabled during maintenance
+
+consumers:
+- username: internal-client
+  keyauth_credentials:
+  - key: your-secure-api-key-here-change-me
