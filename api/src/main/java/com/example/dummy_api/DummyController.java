@@ -30,19 +30,30 @@ public class DummyController {
     }
 
     @GetMapping("/check-status")
-    public String checkStatus(@RequestParam String status) {
-        // Validate input
-        if (!status.equals("Assigned") && !status.equals("Unassigned") && !status.equals("Unknown")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    public String checkStatus(@RequestParam(required = false) String status) {
+        // Check if status parameter is missing
+        if (status == null || status.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Missing required parameter 'status'. Please provide a status parameter. " +
+                "Example: /api/check-status?status=Assigned. " +
+                "Allowed values: Assigned, Unassigned, Unknown");
         }
 
-        // Validate input
+        // Find matching enum status
         Status enumStatus = null;
         for (Status s : Status.values()) {
-            if (s.getStatus().equalsIgnoreCase(status)) {
+            if (s.getStatus().equalsIgnoreCase(status.trim())) {
                 enumStatus = s;
                 break;
             }
+        }
+
+        // If no matching status found, provide helpful error message
+        if (enumStatus == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Invalid status value '" + status + "'. " +
+                "Allowed values are: Assigned, Unassigned, Unknown. " +
+                "Values are case-insensitive.");
         }
 
         return "Received status: " + enumStatus.getStatus();
